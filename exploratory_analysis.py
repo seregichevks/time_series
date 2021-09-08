@@ -16,19 +16,23 @@ palette = plt.get_cmap('Set2')
 import os
 
 # download csv file
-df = pd.read_csv('sensors.csv')
+df_sensors = pd.read_csv('sensors.csv', parse_dates=['timestamp'])
+df_target = pd.read_csv('coke_target.csv', parse_dates=['timestamp'])
+
+# merge dataframes
+df = df_sensors.join(df_target.set_index('timestamp'), on='timestamp')
 
 # let's look at the data
-df
+print(df)
 
 # let's look at the presence of missing values
 msno.bar(df)
 msno.matrix(df)
 
 # we will output statistics for each column
-df.dtypes
-df.describe(include=[np.number]) # number columns
-df.describe(include=[np.object]) # not number
+print(df.dtypes)
+print(df.describe(include=[np.number])) # number columns
+print(df.describe(include=[np.object])) # not number
 
 # Nan values -> median
 for col in df.columns[1:]:
@@ -45,7 +49,7 @@ plt.show()
 # all graf
 fig = go.Figure()
 for col in df.columns[1:]:
-  fig.add_trace(go.Scatter(x=data['timestamp'], y=data[col],
+  fig.add_trace(go.Scatter(x=df['timestamp'], y=df[col],
                     mode='lines',
                     name=col))
 
