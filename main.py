@@ -12,6 +12,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import make_scorer
+from sklearn.metrics import confusion_matrix
+from sklearn.svm import LinearSVC
 import matplotlib.pyplot as plt
 
 # download features
@@ -28,7 +32,7 @@ data = data_x.join(data_y.set_index('timestamp'), on='timestamp')
 
 # replace the missing values with the median values
 for col in data.columns[1:]:
-  data[col].fillna(data[col].median(), inplace=True)
+    data[col].fillna(data[col].median(), inplace=True)
 
 # data for regressor
 X = data.drop(['timestamp', 'target'], axis=1)
@@ -48,19 +52,33 @@ pred = lr.predict(data.drop(['timestamp', 'target'], axis=1))
 data['predict'] = pred
 
 # graf with target value and predict
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=data['timestamp'], y=data['target'],
-                    mode='lines',
-                    name='target'))
-fig.add_trace(go.Scatter(x=data['timestamp'], y=data['predict'],
-                    mode='lines',
-                    name='predict'))
+#fig = go.Figure()
+#fig.add_trace(go.Scatter(x=data['timestamp'], y=data['target'],
+#                         mode='lines',
+#                         name='target'))
+#fig.add_trace(go.Scatter(x=data['timestamp'], y=data['predict'],
+#                         mode='lines',
+#                         name='predict'))
 
-pio.show(fig)
+#pio.show(fig)
 
 # error compared to the basic solution
 mean_squared_error_base = mean_squared_error(base_target.target,
-                   lr.predict(data[data['timestamp']>='2018-01-01 00:00:00']
-                              .drop(['timestamp', 'target', 'predict'], axis=1)))
+                                             lr.predict(data[data['timestamp'] >= '2018-01-01 00:00:00']
+                                                        .drop(['timestamp', 'target', 'predict'], axis=1)))
 
 print('mean_squared_error_base: ', mean_squared_error_base)
+
+lasso = linear_model.Lasso()
+
+cv_results = cross_validate(lasso, X, y, cv=7)
+print(sorted(cv_results.keys()))
+
+print('test_score: ', cv_results['test_score'])
+
+scores = cross_validate(lasso, X, y, cv=3,
+                        scoring=('r2', 'neg_mean_squared_error'),
+                        return_train_score=True)
+print('test_neg_mean_squared_error: ', scores['test_neg_mean_squared_error'])
+
+print('train_r2: ', scores['train_r2'])
